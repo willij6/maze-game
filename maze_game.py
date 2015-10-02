@@ -5,16 +5,19 @@ from math import sqrt
 import random
 import time
 
+
+numrows = 20
+numcols = 20
+bigrows = 2*numrows+1
+bigcols = 2*numcols+1
+
+
 root = Tk()
 root.title("Maze Game")
-root.resizable(False, False)
+root.resizable(width=False, height=False)
 
-canv = Canvas(root, bg="white", height=410, width=410)
+canv = Canvas(root, bg="white", height=bigrows*10, width=bigcols*10)
 canv.grid(columnspan=2, sticky="NEWS")
-
-
-
-
 
 root.rowconfigure(0,weight=1)
 root.rowconfigure(1,weight=0)
@@ -460,12 +463,12 @@ def update_boss_circ():
         canv.coords(boss_circ,-10,-10,0,0)
         bc_vis = False
 
-setup(20,20,random.randint(1,2)==1)
+setup(numrows,numcols,random.randint(1,2)==1)
 
 def kill(e):
     if(aft_canc != False):
         root.after_cancel(aft_canc)
-    setup(20,20,random.randint(1,2)==1)
+    setup(numrows,numcols,random.randint(1,2)==1)
 
 def pause(e):
     global paused
