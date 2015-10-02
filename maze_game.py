@@ -6,6 +6,8 @@ import random
 import time
 
 root = Tk()
+root.title("Maze Game")
+root.resizable(False, False)
 
 canv = Canvas(root, bg="white", height=410, width=410)
 canv.grid(columnspan=2, sticky="NEWS")
