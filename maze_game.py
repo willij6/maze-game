@@ -9,10 +9,10 @@ root = Tk()
 
 canv = Canvas(root, bg="white", height=410, width=410)
 canv.grid(columnspan=2, sticky="NEWS")
-label = Label(root, text="Settings:")
-label.grid(sticky=E)
-txt = Entry(root)
-txt.grid(row=1,column=1,sticky="EW")
+# label = Label(root, text="Settings:")
+# label.grid(sticky=E)
+# txt = Entry(root)
+# txt.grid(row=1,column=1,sticky="EW")
 
 
 
