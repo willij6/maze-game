@@ -13,5 +13,6 @@ other hand, only see along direct unbroken lines of sight.  They are
 also fairly stupid.
 
 ## Controls
-Arrow keys move the player.  `ESC` restarts the game (creating a new
-map).  `Space` pauses the game.
+Arrow keys move the player.  `ESC` restarts the game, creating a new
+map.  `Space` pauses the game, provided that no monsters are within a
+certain distance.
