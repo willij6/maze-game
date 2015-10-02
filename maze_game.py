@@ -11,10 +11,7 @@ root.resizable(False, False)
 
 canv = Canvas(root, bg="white", height=410, width=410)
 canv.grid(columnspan=2, sticky="NEWS")
-# label = Label(root, text="Settings:")
-# label.grid(sticky=E)
-# txt = Entry(root)
-# txt.grid(row=1,column=1,sticky="EW")
+
 
 
 
@@ -493,47 +490,3 @@ root.mainloop()
 #             return
 #         print(dijkstra((startx,starty),(x,y),maz))
     
-# def leftclick(event):
-#     x = canv.canvasx(event.x)
-#     y = canv.canvasy(event.y)
-#     x = int(x/10)
-#     y = int(y/10)
-#     if((x,y) not in maz):
-#         return
-#     global startx, starty, blah
-#     startx = x
-#     starty = y
-#     if(blah == -1):
-#         blah = canv.create_oval(x*10,y*10,x*10+10,y*10+10,fill="orange")
-#     else:
-#         canv.coords(blah, x*10, y*10, x*10+10, y*10+10)
-    
-
-# def mousedown(event):
-#     global curr
-#     curr = n
-#     add_point(canv.canvasx(event.x),canv.canvasy(event.y))
-#     root.update_idletasks()
-              
-# def mouseup(event):
-#     global curr
-#     curr = -1
-
-# def mousemove(event):
-#     global x, y
-#     if(curr != -1):
-#         x[curr] = canv.canvasx(event.x)
-#         y[curr] = canv.canvasy(event.y)
-#         draw_ith(curr)
-#         root.update_idletasks()
-        
-    
-
-
-# canv.bind("<Button-1>", leftclick)
-# canv.bind("<Button-3>", rightclick)
-# canv.bind("<B1-Motion>", mousemove)
-# canv.bind("<ButtonRelease-1>", mouseup)
-
-
-
