@@ -25,10 +25,6 @@ root.columnconfigure(0,weight=0)
 root.columnconfigure(1,weight=1)
 
 
-
-class direction:
-    pass
-
 def neighbors(loc, randomize=True):
     retval = []
     retval.append((loc[0],loc[1]-1))
@@ -39,11 +35,10 @@ def neighbors(loc, randomize=True):
         random.shuffle(retval)
     return retval
 
-def makemaze(nrows, ncols, breadthfirst):
+def makemaze(nrows, ncols):
     bigr = 2*nrows+1
     bigc = 2*ncols+1
-    q = []
-    open_loc = set()
+    open_loc = set() # eventual return value
 
     x = 2*random.randint(1,ncols)-1
     y = 2*random.randint(1,nrows)-1
@@ -63,56 +58,7 @@ def makemaze(nrows, ncols, breadthfirst):
             open_loc.add(second)
             found += 1
         (x,y) = second
-        # if(random.randint(1,100) == 1):
-        #     print(found)
-    print(steps)
         
-    # def handle_loc(loc):
-    #     open_loc.add(loc)
-    #     nbhrs = neighbors(loc)
-    #     for i in range(4):
-    #         d = direction()
-    #         d.start = loc
-    #         d.gate = nbhrs[i]
-    #         q.append(d)
-    # startx = 2*random.randint(1,ncols)-1
-    # starty = 2*random.randint(1,nrows)-1
-    # handle_loc((startx,starty))
-    # haha = 0
-    # print("starting at (%d,%d)" % (startx,starty))
-    # while(len(q) > 0):
-    #     # if(random.randint(1,300) == 1):
-    #     #     print("haha!")
-    #     #     breadthfirst = not breadthfirst
-    #     haha += 1
-    #     if(breadthfirst and haha > 60): # ncols*nrows/2):
-    #         breadthfirst = False
-    #         haha = 0
-    #         print("haha1")
-    #     elif(not breadthfirst and haha > 60): # ncols*nrows/2):
-    #         breadthfirst = True
-    #         haha = 0
-    #         print("haha2")
-    #     if(breadthfirst):
-    #         d = q.pop(random.randint(1,len(q))-1)
-    #     else:
-    #         if(len(q) > 10 and random.randint(1,2) == 1 and False):
-    #             d = q.pop(len(q) - 10)
-    #         else:
-    #             d = q.pop()
-    #     start = d.start
-    #     # breadthfirst = ((start[0] % 4) != (start[1] % 4))
-    #     gate = d.gate
-    #     delta = (gate[0]-start[0],gate[1]-start[1])
-    #     target = (gate[0]+delta[0],gate[1]+delta[1])
-    #     if(target[0] < 0 or target[0] >= bigc):
-    #         continue
-    #     if(target[1] < 0 or target[1] >= bigr):
-    #         continue
-    #     if(target in open_loc):
-    #         continue
-    #     open_loc.add(gate)
-    #     handle_loc(target)
     if ncols > 5 and nrows > 5 and True:
         for j in range(2):
             bestscore = -1
@@ -133,7 +79,7 @@ def makemaze(nrows, ncols, breadthfirst):
                         by = y + 1
                     if (x,y) not in open_loc:
                         break
-                score = dijkstra((ax,ay),(bx,by),open_loc)
+                score = distance((ax,ay),(bx,by),open_loc)
                 if score > bestscore:
                     bestscore = score
                     best = (x,y)
@@ -141,12 +87,17 @@ def makemaze(nrows, ncols, breadthfirst):
     open_loc.add((2*random.randint(1,ncols)-1,0))
     return open_loc
 
-dijkstradata = {}
 
-def dijkstra(start,end, open_loc):
-    global dijkstradata
+# this global data exists because in one case, after
+# running the distance function, we need the data of the optimal
+# path between the two points
+#
+distancedata = {}
+
+def distance(start,end, open_loc):
+    global distancedata
     frontier = {start}
-    dijkstradata = {start:start}
+    distancedata = {start:start}
     old = set()
     d = 0
     while True:
@@ -162,14 +113,14 @@ def dijkstra(start,end, open_loc):
                 if c2 in old or c2 in frontier:
                     continue
                 nextfrontier.add(c2)
-                dijkstradata[c2] = curr
+                distancedata[c2] = curr
         frontier = nextfrontier
         d += 1
 
                 
 
                      
-class boss:
+class monster:
     def __init__(self,home,loc):
         self.home = home
         self.loc = loc
@@ -186,8 +137,8 @@ class boss:
     
     def move(self):
         # first check visibility of the player
-        dx = boss.normalize(self.home.player[0] - self.loc[0])
-        dy = boss.normalize(self.home.player[1] - self.loc[1])
+        dx = monster.normalize(self.home.player[0] - self.loc[0])
+        dy = monster.normalize(self.home.player[1] - self.loc[1])
         if((dx == 0) != (dy == 0)):
             (x,y) = self.loc
             while(True):
@@ -200,8 +151,8 @@ class boss:
                     break
         # okay, now we know whether we're hunting
         if(self.hunting):
-            dx = boss.normalize(self.hunting[0] - self.loc[0])
-            dy = boss.normalize(self.hunting[1] - self.loc[1])
+            dx = monster.normalize(self.hunting[0] - self.loc[0])
+            dy = monster.normalize(self.hunting[1] - self.loc[1])
             if(dx != 0 or dy != 0):
                 self.prevloc = self.loc
                 self.loc = (self.loc[0]+dx,self.loc[1]+dy)
@@ -221,8 +172,8 @@ class boss:
             return
 
 class model:
-    def __init__(self,nrows,ncols,boohoo,enemies):
-        self.maze = makemaze(nrows,ncols,boohoo)
+    def __init__(self,nrows,ncols):
+        self.maze = makemaze(nrows,ncols)
         self.player = (random.randint(1,ncols)*2-1,nrows*2-1)
         self.nrows = nrows
         self.ncols = ncols
@@ -232,41 +183,32 @@ class model:
         self.updateVis()
 
         
-        self.bosses = []
-        # for i in range(enemies):
-        #     self.bosses.append(boss(self))
-        top = 2 # enemies//2
-        bot = 1 # 0 # actually middle
-        mid = 3 # enemies - top - bot
+        self.monsters = []
+        top = 2 # two monsters start along the top of the map
+        bot = 1 # 1 monster starts along the bottom
+                # oops halfway between the top and the bottom
+        mid = 3 # 3 monsters start out spaced evenly along the
+                # shortest path between the player and the exit
         for i in range(top):
-            self.bosses.append(boss(self,(random.randint(1,ncols)*2-1,1)))
+            self.monsters.append(monster(self,(random.randint(1,ncols)*2-1,1)))
         for j in range(bot):
             while(True):
                 x = random.randint(1,ncols)*2-1
                 if(abs(x - self.player[0]) > ncols*2//3):
                     break
-            self.bosses.append(boss(self,(x,(nrows//2)*2-1)))
+            self.monsters.append(monster(self,(x,(nrows//2)*2-1)))
 
-            # x = (self.player[0] + 1)//2
-            
-            # x = random.randint(ncols//4,ncols//2 + ncols//4)
-            # print("Modifier is %d" % x)
-            # x += (self.player[0]+1)//2
-            # print("Putting it at %d" % x)
-            # x %= ncols
-            # print("JK actually %d" % x)
-            # self.bosses.append(boss(self,(x*2+1,nrows*2-3)))
-        # find the exit
+
         x = 0
         while((x,0) not in self.maze):
-            x += 1
-        d = dijkstra(self.player,(x,0), self.maze)
+            x += 1 # find the exit
+        d = distance(self.player,(x,0), self.maze)
         delta = d//2//mid + 1
         loc = (x,0)
         for i in range(mid):
             for j in range(delta):
-                loc = dijkstradata[loc]
-            self.bosses.append(boss(self,loc))
+                loc = distancedata[loc]
+            self.monsters.append(monster(self,loc))
             
         
 
@@ -282,11 +224,11 @@ class model:
                 if(call):
                     call(i,j)
 
-    # callback(x,y,b) means boss b has moved to location (x,y)
-    def moveBosses(self,callback = False):
+    # callback(x,y,b) means monster b has moved to location (x,y)
+    def moveMonsters(self,callback = False):
         if self.running != 0:
             return
-        for b in self.bosses:
+        for b in self.monsters:
             b.move()
             if b.loc == self.player:
                 self.running = -1
@@ -302,7 +244,7 @@ class model:
             return False
         self.player = n
         self.updateVis(viscall)
-        for b in self.bosses:
+        for b in self.monsters:
             if self.player == b.loc:
                 self.running = -1
         if(self.player[1] == 0):
@@ -311,50 +253,61 @@ class model:
                 canv.coords(grays[g], -10, -10, 0, 0)
         return True
 
-ms_delay = 150
-ms_player = 60
+ms_delay = 150 # timing for when the monsters move
+ms_player = 60 # timing for when the player moves
     
 aft_canc = False
 
-def setup(nrows,ncols,boohoo):
+# this function mostly sets up the graphics
+# though it also creates the maze
+# setup() gets called when the game (re)starts
+def setup(nrows,ncols):
     canv.delete(ALL)
     global mod
-    mod = model(nrows, ncols, boohoo, 5)
-    global grays, oranges, green, boss_circ, bc_vis
+    mod = model(nrows, ncols) # this creates the maze and monsters
+
+    global bc_vis # global variable to keep track of whether
+                  # monsters are in range, i.e., whether pause is allowed
+
+    # here are some graphics objects
+    global grays, oranges, green, monster_circ
+    # grays are the squares blocking visibility
+    # oranges are the monsters
+    # green is the player
+    # monster_circ is a red circle showing how close nearest monster is
+    
     grays = {}
     oranges = {}
     for i in range(2*ncols+1):
         for j in range(2*nrows+1):
             if((i,j) not in mod.maze):
                 canv.create_rectangle(i*10,j*10,i*10+10,j*10+10,fill="black")
-            # elif (i,j) in dijkstradata:
-            #     (ii,jj) = dijkstradata[(i,j)]
-            #     if(abs(ii-i) + abs(jj -j) != 1):
-            #         print("(%d,%d) points to (%d,%d)" % (i,j,ii,jj))
-            #     canv.create_line(i*10+5,j*10+5,(i+ii)*5+5,(j+jj)*5+5, fill="blue")
+
     (i,j) = mod.player
     green = canv.create_oval(i*10,j*10,i*10+10,j*10+10,fill="blue")
-    for b in mod.bosses:
+    for b in mod.monsters:
         (i,j) = b.loc
         oranges[b] = canv.create_oval(i*10,j*10,i*10+10,j*10+10,fill="orange")
-    word = "gray"
+    word = "gray" # change this to "" to make the whole maze be visible
     for i in range(2*ncols+1):
         for j in range(2*nrows+1):
-            if((i,j) not in mod.visibility):  # and False:
+            if((i,j) not in mod.visibility):
                 grays[(i,j)] = canv.create_rectangle(i*10,j*10,
                                                      i*10+10,j*10+10,
-                                                     fill=word, outline=word) # "gray"
+                                                     fill=word, outline=word)
             else:
-                grays[(i,j)] = canv.create_rectangle(-10,-10,0,0,fill=word, outline=word) # "gray"
-    boss_circ = canv.create_oval(-10,-10,0,0,fill="",outline="red",width="1.5")
+                grays[(i,j)] = canv.create_rectangle(-10,-10,0,0,fill=word, outline=word)
+    # red "radar" circle showing distance to nearest monster
+    # it starts off the map, to be invisible (probably better ways to do this)
+    monster_circ = canv.create_oval(-10,-10,0,0,fill="",outline="red",width="1.5")
     bc_vis = False
-    update_boss_circ()
+    update_monster_circ()
 
     # register the callbacks for the windowing system
     global aft_canc
     aft_canc = root.after(ms_delay,timecall)
-    global thingies
-    thingies = {}
+    global keymanagers
+    keymanagers = {}
     for j in [["Up","Left","Down","Right"],["w","a","s","d"]]:
         for i in range(4):
             textdir = j[i]
@@ -362,62 +315,60 @@ def setup(nrows,ncols,boohoo):
             (keydown,keyup) = keyfactory(textdir, vectdir)
             root.bind("<KeyPress-" + textdir + ">", keydown)
             root.bind("<KeyRelease-" + textdir + ">", keyup)
+
+
     
+# what follows is
+# a horrible mess caused by problems with key bounces
+# if you hold down the arrow key, tkinter thinks that
+# after some point, the user is releasing and pressing the key repeatedly
+# This happens on Linux Mint but not on Windows
+
+# the current setup might be equivalent to something much simpler
 
 def keyfactory(textdir, vectdir):
     def keydown(event):
         # print("down")
-        global thingies
-        if textdir not in thingies:
-            thingies[textdir] = thingy(vectdir)
+        global keymanagers
+        if textdir not in keymanagers:
+            keymanagers[textdir] = keymanager(vectdir)
         else:
-            thingies[textdir].uncancel()
+            keymanagers[textdir].uncancel()
     def keyup(event):
         # print("up")
-        global thingies
-        if textdir in thingies:
-            thingies[textdir].cancel()
-            # del thingies[textdir]
+        global keymanagers
+        if textdir in keymanagers:
+            keymanagers[textdir].cancel()
     return (keydown, keyup)
-
-        
     
-    
-
-class thingy:
+class keymanager:
     def __init__(self, dir):
         self.canceled = False
         self.dir = dir
         self.doit()
     def doit(self):
-        # print("gogogo!" + str(mod.running))
         if(self.canceled or mod.running != 0):
-            global thingies
+            global keymanagers
             t = False
-            for txt in thingies:
-                if thingies[txt] == self:
+            for txt in keymanagers:
+                if keymanagers[txt] == self:
                     t = txt
                     break
             if(t):
-                del thingies[t]
+                del keymanagers[t]
             return
         root.after(ms_player, self.doit)
-        # t = time.clock()
         if(paused):
             return
-        s = mod.attemptPlayerMove(self.dir[0],self.dir[1],
+        mod.attemptPlayerMove(self.dir[0],self.dir[1],
                               lambda i,j: canv.coords(grays[(i,j)], -10, -10, 0, 0))
-        # if(not s):
-        #     print("Player silly")
-        # else:
-        #     print("Player moves")
-        # print("Player" + str(time.clock() - t))
+
         (i,j) = mod.player
         canv.coords(green,i*10,j*10,i*10+10,j*10+10)
-        update_boss_circ()
+        update_monster_circ()
         root.update_idletasks()
 
-        # print("rereg")
+
 
 
     def cancel(self):
@@ -427,6 +378,7 @@ class thingy:
 
 paused = False
 
+# this function gets called when the monsters need to be moved
 def timecall():
     if(mod.running != 0):
         return
@@ -434,17 +386,15 @@ def timecall():
     aft_canc = root.after(ms_delay,timecall)
     if(paused):
         return
-    mod.moveBosses(lambda i, j, b: canv.coords(oranges[b], i*10, j*10, i*10+10, j*10+10))
-    # print("Bosses move")
-    # print("Monsters" + str(time.clock() - t))
-    update_boss_circ()
+    mod.moveMonsters(lambda i, j, b: canv.coords(oranges[b], i*10, j*10, i*10+10, j*10+10))
+    update_monster_circ()
     root.update_idletasks()
 
-def update_boss_circ():
-    global boss_circ, bc_vis
+def update_monster_circ():
+    global monster_circ, bc_vis
     best_dist = 2000
     (px,py) = mod.player
-    for b in mod.bosses:
+    for b in mod.monsters:
         (bx,by) = b.loc
         d = (bx-px)*(bx-px) + (by-py)*(by-py)
         d = sqrt(d)
@@ -457,18 +407,18 @@ def update_boss_circ():
         py *= 10
         px += 5
         py += 5
-        canv.coords(boss_circ,px-d,py-d,px+d,py+d)
+        canv.coords(monster_circ,px-d,py-d,px+d,py+d)
         bc_vis = True
     else:
-        canv.coords(boss_circ,-10,-10,0,0)
+        canv.coords(monster_circ,-10,-10,0,0)
         bc_vis = False
 
-setup(numrows,numcols,random.randint(1,2)==1)
+setup(numrows,numcols)
 
 def kill(e):
     if(aft_canc != False):
         root.after_cancel(aft_canc)
-    setup(numrows,numcols,random.randint(1,2)==1)
+    setup(numrows,numcols)
 
 def pause(e):
     global paused
@@ -483,13 +433,20 @@ root.mainloop()
 
 
 
-# def rightclick(event):
-#     if(startx != -1):
-#         x = canv.canvasx(event.x)
-#         y = canv.canvasy(event.y)
-#         x = int(x/10)
-#         y = int(y/10)
-#         if((x,y) not in maz):
-#             return
-#         print(dijkstra((startx,starty),(x,y),maz))
-    
+# TODO list
+#
+# Refactor the code into three pieces, so that the logic governing the rules
+# of the game can be as independent as possible from the code to draw the
+# current game state
+#
+# Clean up and encapsulate the code for monitoring key states and
+# solving key bounce issues
+#
+# Add tests
+#
+# Add command line flags for logging, and for varying the settings
+# 
+# Add a settings menu which species the size of the map and number of monsters
+# as well as which algorithm to use for generating the maze
+#
+# Solve the timing problem in Windows
