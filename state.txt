@@ -1,0 +1,38 @@
+SETTINGS
+
+settings['cols']*2+1 = number of columns
+settings['rows']*2+1 = number of rows
+settings['nmon']     = number of monsters
+settings['loops']    = number of shortcuts
+settings['top']      = fraction of monsters that start at top
+settings['mid']      = fraction of monsters that start at middle latitude
+settings['guards']   = fraction that start on shortest path to the player
+settings['danger_radius'] = how close monsters need to be, to be in danger
+settings['fog_radius'] = vision range of the player, sorta
+
+the settings shouldn't change during the course of the game,
+ so 'settings' can be a dict, not a box
+
+todo: add settings for maze-generation algorithm
+
+GAME STATE
+
+state['win'] = 1 if player won, -1 if player lost, else 0
+state['paused'] = True or False depending on whether game is running
+state['open'][(i,j)] = True if location (i,j) is open, else False
+  should be defined for 0 <= i < number of columns
+  	 		0 <= j < number of rows
+  todo: think about whether it should be defined north of the maze exit
+
+state['fog'][(i,j)] = True if location (i,j) is obscured, else False
+state['danger'] = True if monsters are in range, else False
+state['player'] = (i,j) if player is at location (i,j)
+state['monsters'][ell] = (i,j) if ellth monster is at (i,j)
+
+
+EVENTS:
+(different parts of the programs touch these to pass messages)
+state['tick'] = anything: indicates that monsters should advance
+state['move'] = (dx,dy) : player is trying to move in direction (dx,dy)
+state['tilt'] = anything : player is trying to pause or unpause the game
+
