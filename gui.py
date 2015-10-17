@@ -8,6 +8,7 @@ from rules import build_world
 default_settings = {'cols':20, 'rows':20, 'loops':2,
             'nmon':5, 'top':0.33, 'mid':0.33, 'guards':0.33,
             'danger_radius':14, 'fog_radius':7}
+# TODO: add a settings menu
 
 
 
@@ -30,6 +31,7 @@ root.columnconfigure(1,weight=1)
 def times_ten(x,y):
     return (x*10,y*10,(x+1)*10,(y+1)*10)
 
+# to make things invisible, send them here
 def siberia():
     return (-10,-10,0,0)
 
@@ -150,7 +152,7 @@ def draw_world(settings,state):
     def unpause_watcher():
         nonlocal awaiting_unpause
         if(awaiting_unpause and not state['paused']):
-            state['tick']
+            state['tick'] = 1337
             radar_update()
             awaiting_unpause = False
             monster_timer = root.after(ms_delay,timecall)
