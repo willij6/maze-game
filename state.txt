@@ -1,4 +1,11 @@
+Two nested dictionaries keep track of the state of the game.
+
+
 SETTINGS
+
+Contains information that can't/doesn't change during the course of a
+single game, and is needed by the rules to create the initial state of
+the game.
 
 settings['cols']*2+1 = number of columns
 settings['rows']*2+1 = number of rows
@@ -7,15 +14,24 @@ settings['loops']    = number of shortcuts
 settings['top']      = fraction of monsters that start at top
 settings['mid']      = fraction of monsters that start at middle latitude
 settings['guards']   = fraction that start on shortest path to the player
-settings['danger_radius'] = how close monsters need to be, to be in danger
-settings['fog_radius'] = vision range of the player, sorta
+settings['danger_radius'] = how close monsters need to be, to put the player in a panic
+settings['fog_radius'] = vision range of the player, roughly
+
+Two settings control the speeds of the monsters and player character
+settings['monster_period'] = milliseconds between monster movements
+settings['player_period'] = milliseconds between player movements
 
 the settings shouldn't change during the course of the game,
  so 'settings' can be a dict, not a box
 
-todo: add settings for maze-generation algorithm
+TODO: add settings for maze-generation algorithm
+
 
 GAME STATE
+
+This contains information on the current state of the game.
+Also, by abuse of the listeners pattern, this will also be used
+to pass certain messages around.
 
 state['win'] = 1 if player won, -1 if player lost, else 0
 state['paused'] = True or False depending on whether game is running
@@ -30,8 +46,8 @@ state['player'] = (i,j) if player is at location (i,j)
 state['monsters'][ell] = (i,j) if ellth monster is at (i,j)
 
 
-EVENTS:
-(different parts of the programs touch these to pass messages)
+EVENTS/MESSAGES:
+
 state['tick'] = anything: indicates that monsters should advance
 state['move'] = (dx,dy) : player is trying to move in direction (dx,dy)
 state['tilt'] = anything : player is trying to pause or unpause the game
