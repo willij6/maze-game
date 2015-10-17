@@ -1,10 +1,16 @@
 #! /usr/bin/python3
+'''Governs the non-UI rules.
+
+The one important function here is build_world, which takes settings
+and produces a nested dictionary that contains the state of the world,
+and has callbacks attached to enforce all the rules of the game'''
 
 from box import *
 import random
 from random import randint
 
 
+# utility functions for manipulating vectors
 def plus(p1,p2):
     return (p1[0]+p2[0],p1[1]+p2[1])
     
@@ -20,31 +26,52 @@ directions = [(1,0),(0,1),(-1,0),(0,-1)]
 
              
 def make_maze(settings):
+    '''Returns a dictionary whose (i,j)th entry specifies whether
+    location (i,j) is open.  The dimensions are (2r+1) by (2c+1),
+    where r and c are settings['rows'] and settings['cols'].'''
     cols = settings['cols']
     rows = settings['rows']
-    bigc = 2*cols+1
-    bigr = 2*rows+1
-    maze = {}
+    bigc = 2*cols+1 # actual number of columns
+    bigr = 2*rows+1 # actual number of rows
+    maze = {} # eventual return value
+
+    # the maze generation algorithm is the following:
+    # do a random walk.  When going from location a to location b
+    # add the edge from a to b if this is the first time we've reached b
+
+    # we're thinking of a graph whose vertices are the positions (i,j)
+    # with i and j both odd, and whose edges are the positions (i,j)
+    # with exactly one of i and j odd.
+
+    # positions with i and j both even will never be hollowed out
+
+    # To start, block off every location
     for i in range(bigc):
         for j in range(bigr):
             maze[(i,j)] = False
+    # Find the starting location of the random walk
     loc = (2*randint(1,cols)-1, 2*randint(1,rows)-1)
+    # hollow it out
     maze[loc] = True
-    found = 1
+    found = 1 # counts number of visited vertices
     while(found < cols*rows):
-        d = random.choice(directions)
-        gate = plus(loc,d)
-        next_loc = plus(gate,d)
+        d = random.choice(directions) # choose random direction to move
+        gate = plus(loc,d) # the 'edge' we're moving along
+        next_loc = plus(gate,d) # the next 'vertex'
         if(next_loc not in maze):
-            continue
-        if(maze[next_loc] == False):
+            continue # off the edge of the map; try a different direction
+        if(maze[next_loc] == False): # visiting a new location?
             maze[next_loc] = True
             maze[gate] = True
             found += 1
         loc = next_loc
 
 
-    # now, add in the shortcuts
+    # now we have a maze
+    #
+    # However, we're going to modify it a little, by knocking out
+    # a few more walls.  This introduces loops into the maze,
+    # and makes the game easier and more interesting
     shortcuts = settings['loops']
     walls = (cols-1)*rows + cols*(rows-1) # how many walls between cells existed
     walls -= (cols*rows - 1) # how many walls were removed to make the maze
@@ -59,16 +86,24 @@ def make_maze(settings):
 
 
 
-# choose a random wall to knock out, and see how big of a loop
-# it creates...
-# repeat 30 times total, and choose one that creates a really big loop
 def add_shortcut(maze,cols,rows):
+    '''add a shortcut to the maze, by knocking out a wall,
+    preferably one that produces a large-ish loop in the maze'''
+
+    # we don't want to just knock out a random wall,
+    # because this has good odds of producing a
+    # short and boring loop (like a loop of length 8,
+    # not very helpful for the player)
+    #
+    # So instead, we try 30 random walls, and choose the
+    # one which creates the biggest loop
     bestscore = -1
     for i in range(30):
 
-        # the next loop finds a wall (x,y) and
+        # the while(True) loop finds a wall (x,y) and
         # points a and b on either sides
         while True:
+            # coin toss decides between vertical and horizontal walls
             if(randint(0,1) == 0):
                 x = 2*randint(1,cols-1)
                 y = 2*randint(1,rows)-1
@@ -79,6 +114,7 @@ def add_shortcut(maze,cols,rows):
                 y = 2*randint(1,rows-1)
                 a=(x,y-1)
                 b=(x,y+1)
+            # exit the loop if we found a solid wall
             if not maze[(x,y)]:
                 break
         # alright, we found a potential wall
@@ -91,18 +127,15 @@ def add_shortcut(maze,cols,rows):
 
 
 
-# use breadth first search to find the shortest distance
-# from start to end
-#
-# maze[(i,j)] is true iff (i,j) is an open position
-#
-# returns the distance, or -1 if no path exists
-# OR, if path is True
-# returns a path from end to start (a list of pairs), or None if none exists
-#
-# TODO: use A* rather than breadth first search?
-#
 def distance(maze,start,end,path=False):
+    '''Use breadth first search to find the shortest distance
+    in the maze from start to end.
+    If path=False, return the distance (or -1 if no path exists)
+    If path=True, return a path from end to start, or None if no path exists'''
+    # TODO: use A* rather than breadth first search
+
+
+    
     # we'll have two dictionaries
     #    distances and crumbs
     #
@@ -156,6 +189,7 @@ def distance(maze,start,end,path=False):
 
 
 def test():
+    '''Test the make_maze function, and display graphical output'''
     settings = {'cols':5, 'rows':5, 'loops':2}
     maz = make_maze(settings)
     for i in range(2*5+1):
@@ -166,16 +200,22 @@ def test():
 
 
 
-# build the starting configuration, but attach no observers
-# returns a nested box, in the format described in state.txt
-# this sets open,fog, player, and monsters, but not
-# win, paused, or danger
+
 def starting_configuration(settings):
+    '''Build the starting configuration, but attach no observers.
+    Return a nested box, in the format described in state.txt.
+
+    This sets open,fog, player, and monsters, but not
+    win, paused, or danger'''
+    
     rows = settings['rows']
     cols = settings['cols']
 
     state = box() # <- the box that we'll return
+    # the rest of this function fills in state
 
+    # STEP 1: MAKE THE MAZE AND THE FOG
+    
     maze = make_maze(settings)
 
     # add exit at the northern end of the map
@@ -187,26 +227,41 @@ def starting_configuration(settings):
     for (i,j) in maze:
         state['open'][(i,j)] = maze[(i,j)]
         state['fog'][(i,j)] = True
-    
+
+    # STEP 2: PLACE THE PLAYER IN THE MAZE
+        
+    # put the player in a random place along the bottom row
     state['player'] = (randint(1,cols)*2-1,rows*2-1)
 
-    # where should the monsters go?
+    # STEP 3: PLACE THE MONSTERS
+    
+    # 3a: how many monsters?
+    
     nmon = settings['nmon']
+    # allocate nmon monsters among three categories
+    # roughly following the percentages
     tmg = [settings[s] for s in ['top','mid','guards']]
     tmg = [int(nmon*percent) for percent in tmg]
     while(sum(tmg) < nmon):
         tmg[randint(0,2)] += 1
     (top,mid,guards) = tmg
     
-    monster_coords = []
+    monster_coords = [] # running list of monster locations
+
+    # top monsters
     for i in range(top):
         monster_coords.append((randint(1,cols)*2-1,1))
+
+    # middle monsters
     halfway = (rows//2)*2+1
     for i in range(mid):
         monster_coords.append((randint(1,cols)*2-1,halfway))
-        # TODO: previous we checked for these guys being too close
+        # TODO: previously, we checked for these guys being too close
         # to the player's initial position
 
+    # guard monsters
+    #
+    # These stand directly between the player and the exit
     if(guards > 0):
         path = distance(maze,state['player'],northgate,path=True)
         # now path is a path from the exit to the player
@@ -231,10 +286,13 @@ def starting_configuration(settings):
     return state
 
 
-# attach all the observers!
+
 # also set the initial values of win, paused, and danger
 def animate(settings, state):
+    '''Bring the world to life
 
+    Attaches observers and sets the initial values of win, paused,
+    danger'''
 
     state['danger'] = False # but this might get updated below
     state['win'] = 0
@@ -245,30 +303,49 @@ def animate(settings, state):
     cols = settings['cols']
     rows = settings['rows']
 
-    # danger and losing the game
+    # The following code enforces the main mechanics of
+    # the game.
+    #
+    # Each mechanic needs to be enforced in response to
+    # certain changes in the "state" variable.  So, for
+    # each mechanic we write some code in an inline function
+    # and attach this function as an observer to the state.
+    # Often we also run the inline function right now,
+    # to make the state be consistent.
 
 
-    # check whether we're in danger, and end the game if we hit a monster
-    def danger_check():
+
+    # "danger" happens if the player's too close to the monsters
+    # (this makes the radar circle appear, and prevents pausing)
+    #
+    # If the player runs into the monster, the game is over
+    
+    def proximity_check(dummy_var = 0):
+        # watch and watch_key require proximity_check
+        # to have varying arity, hence "dummy_var"
+
         if(nmon == 0):
             state['danger'] = False
+            return
         p = state['player']
+        # make a list of the squared distances to the monsters
         dists = [sq_dist(p,state['monsters'][i]) for i in range(nmon)]
         closest = min(dists)
         if(closest == 0):
-            state['win'] = -1
+            state['win'] = -1 # YOU LOSE
         state['danger'] = (closest <= danger_rad**2)
 
-    # we need to run danger_check when the player or monsters move
-    state['monsters'].watch(lambda k : danger_check())
-    state.watch_key('player',danger_check)
+    # we need to run proximity_check when the player or monsters move
+    state['monsters'].watch(proximity_check)
+    state.watch_key('player',proximity_check)
     
-    danger_check() # also let's run it at the beginning
+    proximity_check() # also let's run it at the beginning
 
 
     # winning the game
     
     def win_check():
+        # check if player reached the northern edge of the map
         if(state['player'][1] == 0):
             state['win'] = 1
 
@@ -276,7 +353,7 @@ def animate(settings, state):
 
     win_check()
 
-    # the game should pause when it ends
+    # the game pauses when it ends
 
     def pause_on_end():
         if(state['win'] != 0):
@@ -305,22 +382,25 @@ def animate(settings, state):
             for j in range(p[1]-fog_rad,p[1]+fog_rad):
                 if((i,j) not in state['fog']):
                     continue
-                state['fog'][(i,j)] = False
+                # if(sq_dist((i,j),p) > fog_rad**2):
+                #     continue
+                if(state['fog'][(i,j)]):
+                    state['fog'][(i,j)] = False
                 # TODO: clear a circle, not a square
 
     state.watch_key('player',fog_clear)
     fog_clear() # the game should start with some fog cleared!
 
-    '''
-    # random fog removal
-    def random_fog():
-        if(False):
-            return
-        i = randint(0,2*cols+1-1)
-        j = randint(0,2*rows)
-        state['fog'][(i,j)] = False
-    state.watch_key('tick',random_fog)
-    '''
+    
+    # # random fog removal
+    
+    # def random_fog():
+    #     for q in range(5):
+    #         i = randint(0,2*cols+1-1)
+    #         j = randint(0,2*rows)
+    #         state['fog'][(i,j)] = False
+    # state.watch_key('tick',random_fog)
+    
     # TODO:
     # a lot of places are contingent on the domains of certain dictionaries
     # e.g. we use (i,j) in state['fog'] rather than doing range checks on
@@ -328,11 +408,11 @@ def animate(settings, state):
 
 
     # when the player tries to pause, the game pauses
+    
     def try_pause():
         if(state['win'] != 0):
             state['paused'] = True # for robustness?
-            return # nice try
-        # otherwise...
+            return
         if(state['paused']):
             state['paused'] = False
         elif(not state['danger']):
@@ -344,18 +424,22 @@ def animate(settings, state):
     animate_monsters(settings,state)
 
 
+
+    
+
 def animate_player(settings,state):
+    '''Add the rules for player movement'''
     maze = state['open']
+    # try_move will be called whenever the player tries to move
     def try_move():
         if(state['win'] != 0 or state['paused']):
-            return # nice try
+            return # don't move if the game is over or the game's paused
         direction = state['move']
         ploc = state['player']
         newloc = plus(ploc,direction)
+        # check for legal move
         if(newloc in maze and maze[newloc]):
             state['player'] = newloc
-
-        # whoah, that was easy!
 
     state.watch_key('move',try_move)
 
@@ -365,25 +449,32 @@ def animate_player(settings,state):
 
 
 def animate_monsters(settings,state):
+    '''Add the rules for monster movement'''
     nmon = settings['nmon']
     
-    # monsters have some internal memory
+    # monsters have some internal memory: if a monster sees the player,
+    # it moves towards the player, and if the player goes out of sight,
+    # it continues to move towards the last location it saw the player
     #
-    # rather than storing this in a struct/class
-    # we'll use closures!
-    # for fun, and because I got tired of typing "self." everywhere
+    # Also the monster remembers where it last was, to avoid doubling
+    # back during random-walk mode.
+    #
+    # Rather than storing this in a struct/class, we'll use closures!
+    # For fun, and because I got tired of typing "self." everywhere
 
 
-    # this returns the program to run for the ith monster
     def closure_factory(i):
+        '''Returns the function that moves the ith monster'''
+        
+        # state variables---these functions as the fields of a struct
+        # managing the ith monster's memory
         prev_loc = state['monsters'][i]
         hunting = False # or d, if we're going in direction d
         destination = state['monsters'][i]
         
-        # prev_loc, hunting, and destination
-        # function as the fields of a struct
 
         def look_one_way(d):
+            '''Is the player visible in direction d?'''
             loc = state['monsters'][i]
             player = state['player']
             while(True):
@@ -395,8 +486,8 @@ def animate_monsters(settings,state):
                     return False
                 
         def look_for_player():
+            '''If player's visible, set hunting and destination'''
             nonlocal hunting, destination
-            current_loc = state['monsters'][i]
             for d in directions:
                 if(look_one_way(d)):
                     hunting = d
@@ -404,21 +495,27 @@ def animate_monsters(settings,state):
                     return
 
         def do_it():
+            '''Move the ith monster'''
             nonlocal prev_loc, hunting, destination
             loc = state['monsters'][i]
             look_for_player()
             if(hunting):
                 next_loc = plus(loc,hunting)
             else:
+                # take all immediate neighbors
                 exits = [plus(loc,d) for d in directions]
+                # only look at ones that are accessible
                 exits = [x for x in exits
                          if x in state['open'] and state['open'][x]]
+                # don't double back on yourself...
                 if(prev_loc in exits):
                     exits.remove(prev_loc)
+                # ...unless necessary
                 if(len(exits) == 0):
                     next_loc = prev_loc
                 else:
                     next_loc = random.choice(exits)
+            # check if we reached the last place we saw the player
             if(hunting and next_loc == destination):
                 hunting = False
             prev_loc = loc
@@ -430,22 +527,25 @@ def animate_monsters(settings,state):
         state.watch_key('tick',closure_factory(i))
 
 
-# the following method is the only outward facing method of this
-# module
 def build_world(settings):
+    '''The only outward facing method of this module
+
+    Return a world built using settings, with observers attached to
+    enforce the rules
+    '''
     state = starting_configuration(settings)
     animate(settings,state)
     return state
     
 
 
-
+# testing data.  These are NOT the default settings for the main game!
 def default_settings():
     return {'cols':7, 'rows':5, 'loops':1,
             'nmon':1, 'top':0.33, 'mid':0.33, 'guards':0.33,
             'danger_radius':2, 'fog_radius':4}
 
-
+# testing function: print a text representation to the console
 def display(settings,state):
     cols = settings['cols']
     rows = settings['rows']
@@ -466,20 +566,18 @@ def display(settings,state):
             s += charrep[(i,j)]
         print(s)
 
-
+# a basic test: see whether the world can be created
 def basic_test():
     s = default_settings()
-    state = starting_configuration(s)
-    animate(s,state)
+    state = build_world(s)
     display(s,state)
 
 
 
-
+# play a small game using console i/o
 def fun_test():
     s = default_settings()
-    state = starting_configuration(s)
-    animate(s,state)
+    state = build_world(s)
     count = 0
     while(state['win'] == 0):
         display(s,state)
